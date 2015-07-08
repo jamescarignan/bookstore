@@ -149,3 +149,54 @@ img.bg {
     left: 10%;
   }
 }
+
+/* Storefront styles */
+
+.storefront_book_display {
+    width: 200px;
+    display: inline-block;
+    text-align: center;
+}
+
+.storefront_book_title {
+    font-size: 14px;
+    display: block;
+    font-weight: bold;
+}
+
+.storefront_book_author {
+    font-size: 11px;
+    display: block;
+}
+
+/* Book detail styles */
+.detail_book_display {
+    text-align: center;
+    margin-top: 20px;
+}
+.detail_book_img {
+    margin-bottom: 20px;
+}
+.detail_book_title {
+    font-size: 20px;
+    display: block;
+    font-weight: bold;
+}
+.detail_book_author {
+    font-size: 16px;
+    display: block;
+}
+.detail_book_description {
+    text-align: left;
+    margin-top: 20px;
+    width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+}
+.detail_book_reviews_title {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    font-size: 20px;
+    display:block;
+    font-weight: bold;
+}
