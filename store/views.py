@@ -1,5 +1,8 @@
 from django.shortcuts import render, redirect
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import reverse
+from django.utils import timezone
+import paypalrestsdk
 
 from .models import Book, BookOrder, Cart
 
@@ -72,5 +75,109 @@ def cart(request):
             'count': count,
         }
         return render(request, 'store/cart.html', context)
+    else:
+        return redirect('index')
+
+
+def checkout(request, processor):
+    if request.user.is_authenticated():
+        cart = Cart.objects.filter(user=request.user.id, active=True)
+        orders = BookOrder.objects.filter(cart=cart)
+        if processor == "paypal":
+            redirect_url = checkout_paypal(request, cart, orders)
+            return redirect(redirect_url)
+    else:
+        return redirect('index')
+
+
+def checkout_paypal(request, cart, orders):
+    if request.user.is_authenticated():
+        items = []
+        total = 0
+        for order in orders:
+            total += (order.book.price * order.quantity)
+            book = order.book
+            item = {
+                'name': book.title,
+                'sku': book.id,
+                'price': str(book.price),
+                'currency': 'USD',
+                'quantity': order.quantity
+            }
+            items.append(item)
+
+        paypalrestsdk.configure({
+          "mode": "sandbox",
+          "client_id": "AT9TQEazuySX4g98zLQKeoWR9UMcO-zdccXpjxLPe0SuMs9LluGDHSB0-yw_sSUi35kt8O7Qdi1fEhoR",
+          "client_secret": "EMC6jwruLbeSv9gZaTl2JViK_eTAyIe7GZFKhnq7dioi9Eo5_K3MJWHKEXSP1UsJXb9I59ACpDKJ37_4" })
+        payment = paypalrestsdk.Payment({
+            "intent": "sale",
+            "payer": {
+                "payment_method": "paypal"},
+            "redirect_urls": {
+                "return_url": "http://localhost:8000/store/process/paypal",
+                "cancel_url": "http://localhost:8000/store"},
+            "transactions": [{
+                "item_list": {
+                    "items": items},
+                "amount": {
+                    "total": str(total),
+                    "currency": "USD"},
+                "description": "Mystery Books order."}]})
+        if payment.create():
+            cart_instance = cart.get()
+            cart_instance.payment_id = payment.id
+            cart_instance.save()
+            for link in payment.links:
+                if link.method == "REDIRECT":
+                    redirect_url = str(link.href)
+                    return redirect_url
+        else:
+            return reverse('order_error')
+    else:
+        return redirect('index')
+
+
+def order_error(request):
+    if request.user.is_authenticated():
+        return render(request, 'store/order_error.html')
+    else:
+        return redirect('index')
+
+
+def process_order(request, processor):
+    if request.user.is_authenticated():
+        if processor == "paypal":
+            payment_id = request.GET.get('paymentId')
+            cart = Cart.objects.filter(payment_id=payment_id)
+            orders = BookOrder.objects.filter(cart=cart)
+            total = 0
+            for order in orders:
+                total += (order.book.price * order.quantity)
+            context = {
+                'cart': orders,
+                'total': total,
+            }
+            return render(request, 'store/process_order.html', context)
+    else:
+        return redirect('index')
+
+
+def complete_order(request, processor):
+    if request.user.is_authenticated():
+        cart = Cart.objects.get(user=request.user.id, active=True)
+        if processor == 'paypal':
+            payment = paypalrestsdk.Payment.find(cart.payment_id)
+            if payment.execute({"payer_id": payment.payer.payer_info.payer_id}):
+                message = "Success! Your order has been completed, and is being processed. Payment ID: %s" % (payment.id)
+                cart.active = False
+                cart.order_date = timezone.now()
+                cart.save()
+            else:
+                message = "There was a problem with the transaction. Error: %s" % (payment.error.message)
+            context = {
+                'message': message,
+            }
+            return render(request, 'store/order_complete.html', context)
     else:
         return redirect('index')
