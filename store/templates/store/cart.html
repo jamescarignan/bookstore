@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block body %}
 <div class="col-md-8 col-md-offset-2 col-sm-12 maincontent">
@@ -24,6 +25,51 @@
 			<h4>Total: $<span class="cart_value">{{total}}</span></h4>
 			{% if cart %}
 			<div><a href="{% url 'checkout' 'paypal' %}"><img src="https://www.paypal.com/en_US/i/btn/btn_xpressCheckout.gif"></a></div>
+			<div>
+				{% csrf_token %}
+				<a href="#">
+					<img src="{% static 'base/img/stripe.png' %}" id="customButton">
+
+					<script>
+						var csrftoken = $.cookie('csrftoken');
+						function csrfSafeMethod(method) {
+						    // these HTTP methods do not require CSRF protection
+						    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+						}
+						$.ajaxSetup({
+						    beforeSend: function(xhr, settings) {
+						        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+						            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+						        }
+						    }
+						});
+					  var handler = StripeCheckout.configure({
+					    key: 'pk_test_nuPOVZfQZNY3ouebYrF6idAN',
+					    token: function(token) {
+								$.post("{% url 'checkout' 'stripe' %}", {'stripeToken': token.id, 'csrfmiddlewaretoken': csrftoken}, function(data) {
+										window.location.replace(data['redirect_url']);
+								});
+					    }
+					  });
+
+					  $('#customButton').on('click', function(e) {
+					    // Open Checkout with further options
+					    handler.open({
+					      name: 'Mystery Books',
+					      description: '{{ count }} book{{ count|pluralize }}',
+					      currency: "USD",
+					      amount: '{{ total|to_cents }}'
+					    });
+					    e.preventDefault();
+					  });
+
+					  // Close Checkout on page navigation
+					  $(window).on('popstate', function() {
+					    handler.close();
+					  });
+					</script>
+				</a>
+			</div>
 			{% endif %}
 		</div>
 		</div>
