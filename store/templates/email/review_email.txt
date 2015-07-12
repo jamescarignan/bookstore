@@ -1,0 +1,6 @@
+Hello {{ username }}, thanks for your review!
+Your discount code is {{ code }}, this is good for {{ discount }}% off your next purchase!
+
+See you around!
+
+Mystery Books
