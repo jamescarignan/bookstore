@@ -115,6 +115,7 @@ img.bg {
     position: absolute;
     top: 0;
     background-color: #fff;
+    padding-bottom: 65px;
 }
 
 .mainbox {
@@ -129,7 +130,7 @@ img.bg {
 .footer {
     margin: 0;
     padding: 10px;
-    position: absolute;
+    position: fixed;
     bottom: 0;
     width: 100%;
     height: 60px;
