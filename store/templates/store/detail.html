@@ -25,27 +25,21 @@
           <script>
           var map;
           var marker;
-          var reviews = {};
-          {% for review in reviews %}
-          reviews[{{review.id}}] = {
-              name: "{{review.user.username}}",
-              lat: "{{review.latitude}}",
-              lng: "{{review.longitude}}"
-          };
-          {% endfor %}
           function initialize() {
             map = new google.maps.Map(document.getElementById('map-canvas'), {
               zoom: 8,
               center: {lat: {{ geo_info.latitude }}, lng: {{ geo_info.longitude }}}
             });
-          $.each(reviews, function (i, val) {
-              var review = val;
-              var center = new google.maps.LatLng(review.lat, review.lng);
-              var title = review.name;
-              marker = new google.maps.Marker({
-                map: map,
-                position: center,
-                title: title
+            $.getJSON('/api/v1/review/?book_id={{ book.id }}', function(data) {
+              $.each(data['objects'], function (i, val) {
+                var review = val;
+                var center = new google.maps.LatLng(review.latitude, review.longitude);
+                var title = review.name;
+                marker = new google.maps.Marker({
+                  map: map,
+                  position: center,
+                  title: review.user.username
+                });
               });
             });
           }
